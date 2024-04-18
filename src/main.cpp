@@ -22,3 +22,5 @@ void loop() {
 int myFunction(int x, int y) {
   return x + y;
 }
+
+//this is a test of changes made and then uploaded to git

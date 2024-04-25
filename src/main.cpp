@@ -13,6 +13,7 @@ int myFunction(int, int);
 
 void setup() {
   // put your setup code here, to run once:
+  Serial.begin(115200);
   result = myFunction(2, 3);
   
   

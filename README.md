@@ -4,6 +4,6 @@
 4. GO TO PUSH/PULL AND SYNC FIRST
 5. anytime you want to add/change code CREATE A NEW BRANCH. you can do this by opening the command line and type " >create branch".
    then name it whatever you want EX: "adding keypad code". and then publish the branch
-6. then code away, once your done, SAVE it on your computer first and STAGE the changes then COMMIT the changes
+6. then code away, once your done, SAVE it on your computer first and STAGE the changes, add MESSAGE, and then COMMIT the changes
 7. you should be able to see your new branch with your new code on github
 8. if the code is ready to be added, it can be merged here on github and will be reflected on VScode after you sync 

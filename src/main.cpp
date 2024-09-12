@@ -604,13 +604,6 @@ void setup(){
 
   Wire.begin(); //starts i2c interface
 
-  lcd.clear();
-  // printToLCD(0, "Welcome to Smart ");
-  // printToLCD(1, "Drip Irrigation!");
-  // printToLCD(2, "Lets set the time");
-  // printToLCD(3, "Press # to start!");
-  lcd.clear();
-  // printToLCD(0, "Set time");
 
 }
 

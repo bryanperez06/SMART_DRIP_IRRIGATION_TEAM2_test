@@ -145,8 +145,8 @@ void displayMainMenu(TimeState state)
 
         case MAIN_MENU:
             lcd.clear();
-            printToLCD(0, "A: Automatic");
-            printToLCD(1, "B: Selectable");
+            printToLCD(0, "1: Automatic");
+            printToLCD(1, "2: Selectable");
         break;
         
         case ENTER_YEAR:

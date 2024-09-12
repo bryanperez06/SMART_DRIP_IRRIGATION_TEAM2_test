@@ -120,6 +120,7 @@ int stringToInt(const String& s)
     return result * sign;
 }
 
+<<<<<<< HEAD
 //Prints to LCD
 void printToLCD(int line, String message)
 {
@@ -605,6 +606,14 @@ void setup(){
   Wire.begin(); //starts i2c interface
 
 
+=======
+void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+  Serial.println("Bruh");
+  delay(100);                      // wait for a second
+  digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+  delay(100);     
+>>>>>>> acb0520b5b7a7e33380997db7506e1c083af8bff
 }
 
 void loop ()

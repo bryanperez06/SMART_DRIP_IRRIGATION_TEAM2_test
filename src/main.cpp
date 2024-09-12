@@ -616,6 +616,7 @@ void loop() {
 >>>>>>> acb0520b5b7a7e33380997db7506e1c083af8bff
 }
 
+<<<<<<< HEAD
 void loop ()
 {
     char key = customKeypad.getKey(); 
@@ -626,3 +627,20 @@ void loop ()
         Serial.println(key);
     }
 }
+=======
+// put function definitions here:
+int myFunction(int x, int y) {
+  return x + y;
+}
+
+//this is a test of changes made and then uploaded to git
+//this a ANOTHER test to see if i can upload changes from my labtop
+//This is a new branch to compare code with another branch 
+//GOtta do one more to test the branch and stage process
+//This is the last one
+//testing branch
+//test chsges
+//Test again
+//More tests
+//kkkkkkk
+>>>>>>> main

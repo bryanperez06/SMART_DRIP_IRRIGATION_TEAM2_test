@@ -16,7 +16,14 @@ uint8_t months       = 01;
 uint8_t days         = 01;
 uint8_t hours        = 00;
 uint8_t minutes      = 00;
-uint8_t seconds      = 00;
+uint8_t seconds      = 30;
+
+#define Valve_A    16
+#define Valve_B    17
+
+RTC_DS3231 RTC;
+DateTime now;
+uint32_t result;
 
 //initial string inputs
 String userInput_1    = "";
@@ -32,6 +39,7 @@ const byte COLS = 4;
 
 
 //Time state enums that help us accomodate the states the machine is in
+
 enum TimeState
 {
     START,
@@ -46,8 +54,17 @@ enum TimeState
     ENTER_MINUTE,
     ENTER_SECOND,
     CONFIRM_INPUT,
-    ERROR
+    ERROR,
+    AUTOMATIC_MODE,
+    DONE
 };
+
+enum WateringMode{
+  ON,
+  OFF
+};
+
+WateringMode WateringState= OFF;
 TimeState currentMenu = START;
 //KEYPAD SETUP BEGINS
 
@@ -68,6 +85,57 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);  // set the LCD address to 0x27 for a 16 cha
 
 //END OF KEYPAD SET UP
 
+void printRealTime(){
+  Serial.print("Date: ");
+  Serial.print(now.month());
+  Serial.print(" ");
+  Serial.print(now.day());
+  Serial.print(", ");
+  Serial.print(now.year());
+
+  Serial.print(" Time: ");
+  Serial.print(now.hour());
+  Serial.print(":");
+  Serial.print(now.minute());
+  Serial.print(":");
+  Serial.print(now.second());
+  Serial.println("");
+};
+
+void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
+  RTC.adjust(DateTime(y, m, d, h, min, s));
+  RTC.begin();
+};
+
+void loopRTC(){
+  Serial.println("Entered loopRTC...");
+  //initRTC(years, months, days, hours, minutes, seconds);
+  Serial.println("Failure point 1");
+  while (1){
+    Serial.println("Failure point 2");
+    now = RTC.now();
+    Serial.println("Failure point 3");
+    printRealTime();
+    Serial.println("Failure point 4");
+    if (now.second()==00){
+      Serial.println("Failure point 5");
+      switch(WateringState){
+        case OFF:
+          Serial.println("Watering was off, turning on...");
+          WateringState=ON;
+          digitalWrite(Valve_A, HIGH);
+          digitalWrite(Valve_B, HIGH);
+        break;
+        case ON:
+          Serial.println("Watering was on, turning off...");
+          WateringState=OFF;
+          digitalWrite(Valve_A, LOW);
+          digitalWrite(Valve_B, LOW);
+        break;
+      }
+    }
+  }
+}
 // A function that returns the number of characters in the string object
 int getLength(const String& s)
 {
@@ -204,6 +272,11 @@ void displayMainMenu(TimeState state)
             printToLCD(1, "     Try again!");
             printToLCD(3, "Press # to continue");
         break;
+
+        case AUTOMATIC_MODE:
+            lcd.clear();
+            printToLCD(0, "Entering automatic mode...");
+          break;
 
         default:
         break;
@@ -576,6 +649,29 @@ void handleMenuInput(char key)
             
         break;
 
+        case MAIN_MENU:
+        while (true){
+            if(key == '1'){
+              currentMenu= AUTOMATIC_MODE;
+              displayMainMenu(currentMenu);
+              break;
+            }
+            else if(key =='2'){
+              currentMenu= MAIN_MENU;
+              displayMainMenu(currentMenu);
+              break;
+            }
+            key = customKeypad.getKey();
+        } 
+        break;
+
+        case AUTOMATIC_MODE:  
+        while(true){
+          //loopRTC();
+
+        }
+        break;
+
         case ERROR:
             while (true)
             {
@@ -597,6 +693,8 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  pinMode(PC2, OUTPUT);
+  pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
   lcd.backlight();
@@ -618,7 +716,7 @@ void loop ()
 {
     char key = customKeypad.getKey(); 
     
-    if (key) 
+    if (key ) 
     {
         handleMenuInput(key); 
         Serial.println(key);

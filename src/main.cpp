@@ -18,11 +18,15 @@ uint8_t hours        = 00;
 uint8_t minutes      = 00;
 uint8_t seconds      = 30;
 
+static float Temperature    = 0.0;
+static float Humidity       = 0.0;
+
 #define Valve_A    16
 #define Valve_B    17
 
 RTC_DS3231 RTC;
 DateTime now;
+Adafruit_Si7021 tempHumid;
 uint32_t result;
 
 //initial string inputs
@@ -99,26 +103,42 @@ void printRealTime(){
   Serial.print(now.minute());
   Serial.print(":");
   Serial.print(now.second());
-  Serial.println("");
+  Serial.print(" ");
 };
 
+void printTempHumid(){
+    Temperature= tempHumid.readTemperature();
+    Humidity= tempHumid.readHumidity();
+
+    Serial.print("Temperature: ");
+    Serial.print(Temperature);
+    Serial.print("°C ");
+    Serial.print("Humidity: ");
+    Serial.print(Humidity);
+    Serial.println("%");
+
+}
+
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
-  RTC.adjust(DateTime(y, m, d, h, min, s));
   RTC.begin();
+  RTC.adjust(DateTime(y, m, d, h, min, s));
+  
 };
 
 void loopRTC(){
-  Serial.println("Entered loopRTC...");
+  //Serial.println("Entered loopRTC...");
   //initRTC(years, months, days, hours, minutes, seconds);
-  Serial.println("Failure point 1");
+  //Serial.println("Failure point 1");
   while (1){
-    Serial.println("Failure point 2");
+    delay(1000);
+    //Serial.println("Failure point 2");
     now = RTC.now();
-    Serial.println("Failure point 3");
+    //Serial.println("Failure point 3");
     printRealTime();
-    Serial.println("Failure point 4");
-    if (now.second()==00){
-      Serial.println("Failure point 5");
+    printTempHumid();
+    //Serial.println("Failure point 4");
+    if (now.second()%10 == 0 || now.second()%10 == 0){
+      //Serial.println("Failure point 5");
       switch(WateringState){
         case OFF:
           Serial.println("Watering was off, turning on...");
@@ -275,7 +295,8 @@ void displayMainMenu(TimeState state)
 
         case AUTOMATIC_MODE:
             lcd.clear();
-            printToLCD(0, "Entering automatic mode...");
+            printToLCD(0, "Entering automatic");
+            printToLCD(1, "mode...");
           break;
 
         default:
@@ -629,6 +650,7 @@ void handleMenuInput(char key)
                         if (key == '#')
                         {
                             //RTC.adjust(DateTime(years, months, days, hours, minutes, seconds));
+                            initRTC(years, months, days, hours, minutes, seconds);
                             currentMenu = MAIN_MENU;
                             displayMainMenu(currentMenu);
                             break;
@@ -667,7 +689,7 @@ void handleMenuInput(char key)
 
         case AUTOMATIC_MODE:  
         while(true){
-          //loopRTC();
+          loopRTC();
 
         }
         break;

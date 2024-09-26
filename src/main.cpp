@@ -21,6 +21,14 @@ uint8_t seconds      = 30;
 static float Temperature    = 0.0;
 static float Humidity       = 0.0;
 
+int moistureSensor = 0;   //A0 pin for the ADC converter
+//const int redLEDPin = 3;           // red LED connected to digital pin (This is the valve in this simulation)
+float VoltageTotal;
+float SensorAverage;
+int x;
+float RawValue;
+
+
 #define Valve_A    16
 #define Valve_B    17
 
@@ -88,6 +96,38 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);  // set the LCD address to 0x27 for a 16 cha
 
 
 //END OF KEYPAD SET UP
+void adc() {
+  //Let's average some values together to get a more accurate reading
+  Serial.print("Average of 50:\n");
+//Will need to add an if statement to check if its nighttime, so that it only runs at night
+
+  RawValue=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
+  SensorAverage=0;
+  VoltageTotal=0;
+  for (x=0; x<50; x++){
+    RawValue=analogRead(moistureSensor);
+    SensorAverage= RawValue*0.00488;//Use this conversion since ADC has 1024 bits of resolution
+    Serial.println(SensorAverage);
+    VoltageTotal=VoltageTotal + SensorAverage;
+    delay(500); //Will take a reading every 1 second
+    //Will add a way to kick out any outliers
+    }
+  
+  SensorAverage=VoltageTotal/50;//To find average
+  Serial.print("Sensor Average:");//checking serial port
+  Serial.println(SensorAverage);//Checked the values in excel, its averaging them correctly
+
+  //Now we will use this averaged value to determine when to open or close the valves
+    if (SensorAverage <= 2.0)  {
+    digitalWrite(Valve_A, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
+    Serial.print("High Loop\n");
+    //delay(900000) //This will allow it to water for 15 minutes will comment in once ready for testing
+    }
+    if (SensorAverage > 2.0) {
+      digitalWrite(Valve_A,LOW);  //We will have to reset it otherwise the valve will stay on
+      //delay(900000) //This will close the valves for 15 minutes and then recheck the moisture level
+    }
+}
 
 void printRealTime(){
   Serial.print("Date: ");
@@ -126,19 +166,17 @@ void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s
 };
 
 void loopRTC(){
-  //Serial.println("Entered loopRTC...");
-  //initRTC(years, months, days, hours, minutes, seconds);
-  //Serial.println("Failure point 1");
+  
   while (1){
     delay(1000);
-    //Serial.println("Failure point 2");
+    
     now = RTC.now();
-    //Serial.println("Failure point 3");
+    
     printRealTime();
     printTempHumid();
-    //Serial.println("Failure point 4");
-    if (now.second()%10 == 0 || now.second()%10 == 0){
-      //Serial.println("Failure point 5");
+    
+    /*if (now.second()%10 == 0 || now.second()%10 == 0){
+      
       switch(WateringState){
         case OFF:
           Serial.println("Watering was off, turning on...");
@@ -152,8 +190,8 @@ void loopRTC(){
           digitalWrite(Valve_A, LOW);
           digitalWrite(Valve_B, LOW);
         break;
-      }
-    }
+      }*/
+    adc();
   }
 }
 // A function that returns the number of characters in the string object

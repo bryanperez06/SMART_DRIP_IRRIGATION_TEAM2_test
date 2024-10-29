@@ -752,8 +752,8 @@ void handleMenuInput(char key)
 }
 //set up
 void setup(){
-  Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  pinMode(PC2, OUTPUT);
+  //Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  /*pinMode(PC2, OUTPUT);
   pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
@@ -768,17 +768,36 @@ void setup(){
   // printToLCD(2, "Lets set the time");
   // printToLCD(3, "Press # to start!");
   lcd.clear();
-  // printToLCD(0, "Set time");
+  // printToLCD(0, "Set time");*/
+
+  pinMode(0, OUTPUT);
+  pinMode(1, OUTPUT);
+  pinMode(13, OUTPUT);
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
 
 }
 
 void loop ()
 {
-    char key = customKeypad.getKey(); 
+    /*char key = customKeypad.getKey(); 
     
     if (key ) 
     {
         handleMenuInput(key); 
         Serial.println(key);
-    }
+    }*/
+
+    digitalWrite(0,HIGH);
+    digitalWrite(1,HIGH);
+    digitalWrite(13,HIGH);
+    digitalWrite(16,HIGH);
+    digitalWrite(17,HIGH);
+    delay(2000);
+    digitalWrite(0,LOW);
+    digitalWrite(1,LOW);
+    digitalWrite(13,LOW);
+    digitalWrite(16,LOW);
+    digitalWrite(17,LOW);
+    delay(2000);
 }

@@ -6,6 +6,9 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <Arduino_FreeRTOS.h>
+#include <semphr.h>
+#include <SD.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -28,9 +31,10 @@ float SensorAverage;
 int x;
 float RawValue;
 
-
-#define Valve_A    16
-#define Valve_B    17
+#define Sensor_A   16
+#define Sensoe_B   17
+#define Valve_A    0
+#define Valve_B    1
 
 RTC_DS3231 RTC;
 DateTime now;
@@ -174,23 +178,6 @@ void loopRTC(){
     
     printRealTime();
     printTempHumid();
-    
-    /*if (now.second()%10 == 0 || now.second()%10 == 0){
-      
-      switch(WateringState){
-        case OFF:
-          Serial.println("Watering was off, turning on...");
-          WateringState=ON;
-          digitalWrite(Valve_A, HIGH);
-          digitalWrite(Valve_B, HIGH);
-        break;
-        case ON:
-          Serial.println("Watering was on, turning off...");
-          WateringState=OFF;
-          digitalWrite(Valve_A, LOW);
-          digitalWrite(Valve_B, LOW);
-        break;
-      }*/
     adc();
   }
 }
@@ -753,8 +740,6 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  pinMode(PC2, OUTPUT);
-  pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
   lcd.backlight();
@@ -763,12 +748,9 @@ void setup(){
   Wire.begin(); //starts i2c interface
 
   lcd.clear();
-  // printToLCD(0, "Welcome to Smart ");
-  // printToLCD(1, "Drip Irrigation!");
-  // printToLCD(2, "Lets set the time");
-  // printToLCD(3, "Press # to start!");
   lcd.clear();
-  // printToLCD(0, "Set time");
+
+  
 
 }
 

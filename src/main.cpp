@@ -6,6 +6,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <SD.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -157,6 +158,51 @@ void printTempHumid(){
     Serial.print(Humidity);
     Serial.println("%");
 
+}
+
+void writeRTC(){
+    File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+    if (dataFile) {
+        dataFile.print("Date: ");
+        dataFile.print(now.month());
+        dataFile.print(" ");
+        dataFile.print(now.day());
+        dataFile.print(", ");
+        dataFile.print(now.year());
+
+        dataFile.print(" Time: ");
+        dataFile.print(now.hour());
+        dataFile.print(":");
+        dataFile.print(now.minute());
+        dataFile.print(":");
+        dataFile.print(now.second());
+        dataFile.print(" ");
+    }
+ // If file doesn't open issue an error
+    else {
+    Serial.println("error opening datalog.txt");
+    }
+}
+
+void writeSDTempHumid(){
+    File dataFile = SD.open("datalog.txt", FILE_WRITE);
+
+    if (dataFile) {
+    Temperature= tempHumid.readTemperature();
+    Humidity= tempHumid.readHumidity();
+
+    dataFile.print("Temperature: ");
+    dataFile.print(Temperature);
+    dataFile.print("°C ");
+    dataFile.print("Humidity: ");
+    dataFile.print(Humidity);
+    dataFile.println("%");
+    }
+ // If file doesn't open issue an error
+    else {
+    Serial.println("error opening datalog.txt");
+    }
 }
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
@@ -753,32 +799,29 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  pinMode(PC2, OUTPUT);
+  /*pinMode(PC2, OUTPUT);
   pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
   lcd.backlight();
-  lcd.clear();
+  lcd.clear();*/
 
   Wire.begin(); //starts i2c interface
 
-  lcd.clear();
-  // printToLCD(0, "Welcome to Smart ");
-  // printToLCD(1, "Drip Irrigation!");
-  // printToLCD(2, "Lets set the time");
-  // printToLCD(3, "Press # to start!");
-  lcd.clear();
-  // printToLCD(0, "Set time");
+  //lcd.clear();
 
 }
 
 void loop ()
 {
-    char key = customKeypad.getKey(); 
+    /*char key = customKeypad.getKey(); 
     
     if (key ) 
     {
         handleMenuInput(key); 
         Serial.println(key);
-    }
+    }*/
+    printTempHumid();
+    writeSDTempHumid();
+    delay(1000);
 }

@@ -29,7 +29,8 @@ float SensorAverage;
 int x;
 float RawValue;
 
-
+#define Sensor_A   0
+#define Sensor_B   1
 #define Valve_A    16
 #define Valve_B    17
 
@@ -37,6 +38,8 @@ RTC_DS3231 RTC;
 DateTime now;
 Adafruit_Si7021 tempHumid;
 uint32_t result;
+
+const int chipSelect = 10; //Move to cs 8 if this doesn't work
 
 //initial string inputs
 String userInput_1    = "";
@@ -98,36 +101,21 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);  // set the LCD address to 0x27 for a 16 cha
 
 //END OF KEYPAD SET UP
 void adc() {
-  //Let's average some values together to get a more accurate reading
-  Serial.print("Average of 50:\n");
-//Will need to add an if statement to check if its nighttime, so that it only runs at night
+    //Let's average some values together to get a more accurate reading
 
-  RawValue=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
-  SensorAverage=0;
-  VoltageTotal=0;
-  for (x=0; x<50; x++){
-    RawValue=analogRead(moistureSensor);
-    SensorAverage= RawValue*0.00488;//Use this conversion since ADC has 1024 bits of resolution
-    Serial.println(SensorAverage);
-    VoltageTotal=VoltageTotal + SensorAverage;
-    delay(500); //Will take a reading every 1 second
-    //Will add a way to kick out any outliers
-    }
-  
-  SensorAverage=VoltageTotal/50;//To find average
-  Serial.print("Sensor Average:");//checking serial port
-  Serial.println(SensorAverage);//Checked the values in excel, its averaging them correctly
-
-  //Now we will use this averaged value to determine when to open or close the valves
-    if (SensorAverage <= 2.0)  {
-    digitalWrite(Valve_A, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
-    Serial.print("High Loop\n");
-    //delay(900000) //This will allow it to water for 15 minutes will comment in once ready for testing
-    }
-    if (SensorAverage > 2.0) {
-      digitalWrite(Valve_A,LOW);  //We will have to reset it otherwise the valve will stay on
-      //delay(900000) //This will close the valves for 15 minutes and then recheck the moisture level
-    }
+    RawValue=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
+    SensorAverage=0;
+    VoltageTotal=0;
+    for (x=0; x<50; x++){
+        RawValue=analogRead(moistureSensor);
+        SensorAverage= RawValue*0.00488;//Use this conversion since ADC has 1024 bits of resolution
+        //Serial.println(SensorAverage);
+        VoltageTotal=VoltageTotal + SensorAverage;
+        delay(500); //Will take a reading every 1 second
+        //Will add a way to kick out any outliers
+        }
+    
+    SensorAverage=VoltageTotal/50;//To find average
 }
 
 void printRealTime(){
@@ -181,7 +169,7 @@ void writeRTC(){
     }
  // If file doesn't open issue an error
     else {
-    Serial.println("error opening datalog.txt");
+    //Serial.println("error opening datalog.txt");
     }
 }
 
@@ -201,45 +189,117 @@ void writeSDTempHumid(){
     }
  // If file doesn't open issue an error
     else {
-    Serial.println("error opening datalog.txt");
+    //Serial.println("error opening datalog.txt");
     }
 }
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
   RTC.begin();
+
+  RTC.disableAlarm(1);
+  RTC.disableAlarm(2);
+  RTC.clearAlarm(1);
+  RTC.clearAlarm(2);
   RTC.adjust(DateTime(y, m, d, h, min, s));
+
+  now = RTC.now();
   
 };
 
-void loopRTC(){
-  
-  while (1){
+void checkTime(){
+
+    while (1){
     delay(1000);
     
     now = RTC.now();
     
     printRealTime();
     printTempHumid();
+
+    writeRTC();
+    writeSDTempHumid();
     
-    /*if (now.second()%10 == 0 || now.second()%10 == 0){
+    if (now.second()%10 == 0 || now.second()%10 == 0){
       
       switch(WateringState){
         case OFF:
-          Serial.println("Watering was off, turning on...");
+
           WateringState=ON;
           digitalWrite(Valve_A, HIGH);
           digitalWrite(Valve_B, HIGH);
+          //digitalWrite(Sensor_A, HIGH);
+          //digitalWrite(Sensor_B, HIGH);
         break;
         case ON:
-          Serial.println("Watering was on, turning off...");
+          
           WateringState=OFF;
           digitalWrite(Valve_A, LOW);
           digitalWrite(Valve_B, LOW);
+          //digitalWrite(Sensor_A, LOW);
+          //digitalWrite(Sensor_B, LOW);
         break;
-      }*/
-    adc();
-  }
+        }
+    //adc();
+    }
+    
+  /*while (1){
+    delay(1000);
+    now = RTC.now();
+
+    //check if past 6pm to be in automatic mode
+    if(now.hour() >= 18){
+        //set alarm to comeback to checkTime() after 6am
+        //automatic mode
+    }
+    else if(now.hour() < 18){
+        //set alarm to comeback to checkTime() after 6pm
+        //standby/sleep mode
+    }
+  }*/
+    }
 }
+
+void automaticMode(){
+    //setup pins for relays connnecting to valves and sensors
+
+    //valves A and B respectively
+    pinMode(Valve_A, OUTPUT);
+    pinMode(Valve_B, OUTPUT);
+
+    //Sensors A and B respectively
+    pinMode(Sensor_A, OUTPUT);
+    pinMode(Sensor_B, OUTPUT);
+
+    now = RTC.now();
+
+    while (1){
+        
+        //once its 6am, go back to check time
+        if (now.hour() > 5){
+            return;
+        }
+
+        //water at 6pm, 9pm, 12pm, and 3am, for 1 hour at each time interval
+        if(now.hour()== 18 || //6pm
+           now.hour()== 18 || //9pm
+           now.hour()== 18 || //12pm
+           now.hour()== 18    //3am
+           ){
+
+            //check sensors to check moisure
+            adc();
+            if (SensorAverage <= 2.0)  {
+                digitalWrite(Valve_A, HIGH);
+                digitalWrite(Valve_B, HIGH);
+            }
+            if (SensorAverage > 2.0) {
+                digitalWrite(Valve_A,LOW);
+                digitalWrite(Valve_B,LOW);
+            }
+        }
+    }
+
+};
 // A function that returns the number of characters in the string object
 int getLength(const String& s)
 {
@@ -773,8 +833,7 @@ void handleMenuInput(char key)
 
         case AUTOMATIC_MODE:  
         while(true){
-          loopRTC();
-
+          checkTime();
         }
         break;
 
@@ -799,29 +858,31 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  /*pinMode(PC2, OUTPUT);
-  pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
   lcd.backlight();
-  lcd.clear();*/
+  lcd.clear();
 
   Wire.begin(); //starts i2c interface
 
-  //lcd.clear();
+  lcd.clear();
 
+    while (!Serial); //Wait for serial monitor to connect
+    Serial.print("Initializing SD card...");
+    if (!SD.begin(chipSelect)) { //initialize sd card and library
+        Serial.println("initialization failed. Things to check:");
+        while (true);
+    }
+    Serial.println("initialization done.");
 }
 
 void loop ()
 {
-    /*char key = customKeypad.getKey(); 
+    char key = customKeypad.getKey(); 
     
     if (key ) 
     {
         handleMenuInput(key); 
         Serial.println(key);
-    }*/
-    printTempHumid();
-    writeSDTempHumid();
-    delay(1000);
+    }
 }

@@ -119,7 +119,7 @@ void adc() {
 }
 
 void printRealTime(){
-  Serial.print("Date: ");
+  /*Serial.print("Date: ");
   Serial.print(now.month());
   Serial.print(" ");
   Serial.print(now.day());
@@ -132,19 +132,19 @@ void printRealTime(){
   Serial.print(now.minute());
   Serial.print(":");
   Serial.print(now.second());
-  Serial.print(" ");
+  Serial.print(" ");*/
 };
 
 void printTempHumid(){
     Temperature= tempHumid.readTemperature();
     Humidity= tempHumid.readHumidity();
 
-    Serial.print("Temperature: ");
+    /*Serial.print("Temperature: ");
     Serial.print(Temperature);
     Serial.print("°C ");
     Serial.print("Humidity: ");
     Serial.print(Humidity);
-    Serial.println("%");
+    Serial.println("%");*/
 
 }
 
@@ -166,6 +166,7 @@ void writeRTC(){
         dataFile.print(":");
         dataFile.print(now.second());
         dataFile.print(" ");
+        dataFile.close();
     }
  // If file doesn't open issue an error
     else {
@@ -186,6 +187,8 @@ void writeSDTempHumid(){
     dataFile.print("Humidity: ");
     dataFile.print(Humidity);
     dataFile.println("%");
+    dataFile.close();
+
     }
  // If file doesn't open issue an error
     else {
@@ -209,37 +212,38 @@ void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s
 void checkTime(){
 
     while (1){
-    delay(1000);
-    
-    now = RTC.now();
-    
-    printRealTime();
-    printTempHumid();
+        delay(1000);
+        
+        now = RTC.now();
+        
+        printRealTime();
+        printTempHumid();
 
-    writeRTC();
-    writeSDTempHumid();
-    
-    if (now.second()%10 == 0 || now.second()%10 == 0){
-      
-      switch(WateringState){
-        case OFF:
+        writeRTC();
+        writeSDTempHumid();
+        
+        if (now.second()%10 == 0 || now.second()%10 == 0){
+        
+        switch(WateringState){
+            case OFF:
 
-          WateringState=ON;
-          digitalWrite(Valve_A, HIGH);
-          digitalWrite(Valve_B, HIGH);
-          //digitalWrite(Sensor_A, HIGH);
-          //digitalWrite(Sensor_B, HIGH);
-        break;
-        case ON:
-          
-          WateringState=OFF;
-          digitalWrite(Valve_A, LOW);
-          digitalWrite(Valve_B, LOW);
-          //digitalWrite(Sensor_A, LOW);
-          //digitalWrite(Sensor_B, LOW);
-        break;
+            WateringState=ON;
+            digitalWrite(Valve_A, HIGH);
+            digitalWrite(Valve_B, HIGH);
+            //digitalWrite(Sensor_A, HIGH);
+            //digitalWrite(Sensor_B, HIGH);
+            break;
+            case ON:
+            
+            WateringState=OFF;
+            digitalWrite(Valve_A, LOW);
+            digitalWrite(Valve_B, LOW);
+            //digitalWrite(Sensor_A, LOW);
+            //digitalWrite(Sensor_B, LOW);
+            break;
+            }
+        //adc();
         }
-    //adc();
     }
     
   /*while (1){
@@ -256,7 +260,6 @@ void checkTime(){
         //standby/sleep mode
     }
   }*/
-    }
 }
 
 void automaticMode(){
@@ -857,23 +860,23 @@ void handleMenuInput(char key)
 }
 //set up
 void setup(){
-  Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  TimeState currentMenu = START;
-  lcd.init();          // initialize the lcd 
-  lcd.backlight();
-  lcd.clear();
+    Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+    TimeState currentMenu = START;
+    lcd.init();          // initialize the lcd 
+    lcd.backlight();
+    lcd.clear();
 
-  Wire.begin(); //starts i2c interface
+    Wire.begin(); //starts i2c interface
 
-  lcd.clear();
-
-    while (!Serial); //Wait for serial monitor to connect
+    lcd.clear();
+    
+    /*while (!Serial); //Wait for serial monitor to connect
     Serial.print("Initializing SD card...");
     if (!SD.begin(chipSelect)) { //initialize sd card and library
         Serial.println("initialization failed. Things to check:");
         while (true);
     }
-    Serial.println("initialization done.");
+    Serial.println("initialization done.");*/
 }
 
 void loop ()

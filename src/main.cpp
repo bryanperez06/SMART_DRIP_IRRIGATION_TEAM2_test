@@ -174,9 +174,15 @@ void loopRTC(){
     
     printRealTime();
     printTempHumid();
+
+    if (digitalRead(2)==HIGH){
+        Serial.println("LED button HIGH");
+    }
+    else{
+        Serial.println("LED button LOW");
+    }
     
-    /*if (now.second()%10 == 0 || now.second()%10 == 0){
-      
+    /*if (now.second()%10 == 0){
       switch(WateringState){
         case OFF:
           Serial.println("Watering was off, turning on...");
@@ -193,7 +199,7 @@ void loopRTC(){
       }*/
     adc();
   }
-}
+  }
 // A function that returns the number of characters in the string object
 int getLength(const String& s)
 {
@@ -755,6 +761,7 @@ void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
   pinMode(PC2, OUTPUT);
   pinMode(PC3, OUTPUT);
+  pinMode(2, INPUT );
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
   lcd.backlight();

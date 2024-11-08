@@ -6,6 +6,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <SD.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -29,8 +30,11 @@ int x;
 float RawValue;
 
 
+#define Sensor_A   0
+#define Sensor_B   1
 #define Valve_A    16
 #define Valve_B    17
+
 
 RTC_DS3231 RTC;
 DateTime now;
@@ -165,6 +169,10 @@ void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s
   
 };
 
+void checkTime(){
+
+}
+
 void loopRTC(){
   
   while (1){
@@ -274,12 +282,6 @@ void displayMainMenu(TimeState state)
             printToLCD(2, "Lets set the time");
             printToLCD(3, "Press key to start!");
         break;
-
-        case MAIN_MENU:
-            lcd.clear();
-            printToLCD(0, "1: Automatic");
-            printToLCD(1, "2: Selectable");
-        break;
         
         case ENTER_YEAR:
             lcd.clear();
@@ -339,8 +341,10 @@ void displayMainMenu(TimeState state)
 
         case AUTOMATIC_MODE:
             lcd.clear();
-            printToLCD(0, "Entering automatic");
+            printToLCD(0, "Entering Autonomous");
             printToLCD(1, "mode...");
+            //printToLCD(2, "Press LED button for data");
+            printToLCD(3, "Press key to start");
           break;
 
         default:
@@ -695,7 +699,7 @@ void handleMenuInput(char key)
                         {
                             //RTC.adjust(DateTime(years, months, days, hours, minutes, seconds));
                             initRTC(years, months, days, hours, minutes, seconds);
-                            currentMenu = MAIN_MENU;
+                            currentMenu = AUTOMATIC_MODE;
                             displayMainMenu(currentMenu);
                             break;
                         }
@@ -715,24 +719,9 @@ void handleMenuInput(char key)
             
         break;
 
-        case MAIN_MENU:
-        while (true){
-            if(key == '1'){
-              currentMenu= AUTOMATIC_MODE;
-              displayMainMenu(currentMenu);
-              break;
-            }
-            else if(key =='2'){
-              currentMenu= MAIN_MENU;
-              displayMainMenu(currentMenu);
-              break;
-            }
-            key = customKeypad.getKey();
-        } 
-        break;
-
         case AUTOMATIC_MODE:  
         while(true){
+            
           loopRTC();
 
         }
@@ -759,8 +748,6 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  pinMode(PC2, OUTPUT);
-  pinMode(PC3, OUTPUT);
   pinMode(2, INPUT );
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
@@ -770,13 +757,15 @@ void setup(){
   Wire.begin(); //starts i2c interface
 
   lcd.clear();
-  // printToLCD(0, "Welcome to Smart ");
-  // printToLCD(1, "Drip Irrigation!");
-  // printToLCD(2, "Lets set the time");
-  // printToLCD(3, "Press # to start!");
   lcd.clear();
-  // printToLCD(0, "Set time");
 
+  /*while (!Serial); //Wait for serial monitor to connect
+    Serial.print("Initializing SD card...");
+    if (!SD.begin(10)) { //initialize sd card and library
+        Serial.println("initialization failed. Things to check:");
+        while (true);
+    }
+    Serial.println("initialization done.");*/
 }
 
 void loop ()

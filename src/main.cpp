@@ -6,7 +6,6 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
-#include <SD.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -28,7 +27,6 @@ float VoltageTotal;
 float SensorAverage;
 int x;
 float RawValue;
-
 
 #define Sensor_A   0
 #define Sensor_B   1
@@ -165,49 +163,96 @@ void printTempHumid(){
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
   RTC.begin();
+
+  RTC.disableAlarm(1);
+  RTC.disableAlarm(2);
+  RTC.clearAlarm(1);
+  RTC.clearAlarm(2);
   RTC.adjust(DateTime(y, m, d, h, min, s));
+
+  now = RTC.now();
   
 };
 
 void checkTime(){
 
+    while (1){
+        delay(1000);
+        
+        now = RTC.now();
+        
+        printRealTime();
+        printTempHumid();
+
+        //writeRTC();
+        //writeSDTempHumid();
+        
+        if (now.second()%10 == 0 || now.second()%10 == 0){
+        
+        switch(WateringState){
+            case OFF:
+
+            WateringState=ON;
+            digitalWrite(Valve_A, HIGH);
+            digitalWrite(Valve_B, HIGH);
+            //digitalWrite(Sensor_A, HIGH);
+            //digitalWrite(Sensor_B, HIGH);
+            break;
+            case ON:
+            
+            WateringState=OFF;
+            digitalWrite(Valve_A, LOW);
+            digitalWrite(Valve_B, LOW);
+            //digitalWrite(Sensor_A, LOW);
+            //digitalWrite(Sensor_B, LOW);
+            break;
+            }
+        //adc();
+        }
+    }
 }
 
-void loopRTC(){
-  
-  while (1){
-    delay(1000);
-    
-    now = RTC.now();
-    
-    printRealTime();
-    printTempHumid();
+void automaticMode(){
+    //setup pins for relays connnecting to valves and sensors
 
-    if (digitalRead(2)==HIGH){
-        Serial.println("LED button HIGH");
+    //valves A and B respectively
+    pinMode(Valve_A, OUTPUT);
+    pinMode(Valve_B, OUTPUT);
+
+    //Sensors A and B respectively
+    pinMode(Sensor_A, OUTPUT);
+    pinMode(Sensor_B, OUTPUT);
+
+    now = RTC.now();
+
+    while (1){
+        
+        //once its 6am, go back to check time
+        if (now.hour() > 5){
+            return;
+        }
+
+        //water at 6pm, 9pm, 12pm, and 3am, for 1 hour at each time interval
+        if(now.hour()== 18 || //6pm
+           now.hour()== 18 || //9pm
+           now.hour()== 18 || //12pm
+           now.hour()== 18    //3am
+           ){
+
+            //check sensors to check moisure
+            adc();
+            if (SensorAverage <= 2.0)  {
+                digitalWrite(Valve_A, HIGH);
+                digitalWrite(Valve_B, HIGH);
+            }
+            if (SensorAverage > 2.0) {
+                digitalWrite(Valve_A,LOW);
+                digitalWrite(Valve_B,LOW);
+            }
+        }
     }
-    else{
-        Serial.println("LED button LOW");
-    }
-    
-    /*if (now.second()%10 == 0){
-      switch(WateringState){
-        case OFF:
-          Serial.println("Watering was off, turning on...");
-          WateringState=ON;
-          digitalWrite(Valve_A, HIGH);
-          digitalWrite(Valve_B, HIGH);
-        break;
-        case ON:
-          Serial.println("Watering was on, turning off...");
-          WateringState=OFF;
-          digitalWrite(Valve_A, LOW);
-          digitalWrite(Valve_B, LOW);
-        break;
-      }*/
-    adc();
-  }
-  }
+
+};
 // A function that returns the number of characters in the string object
 int getLength(const String& s)
 {
@@ -722,7 +767,7 @@ void handleMenuInput(char key)
         case AUTOMATIC_MODE:  
         while(true){
             
-          loopRTC();
+          checkTime();
 
         }
         break;
@@ -759,13 +804,6 @@ void setup(){
   lcd.clear();
   lcd.clear();
 
-  /*while (!Serial); //Wait for serial monitor to connect
-    Serial.print("Initializing SD card...");
-    if (!SD.begin(10)) { //initialize sd card and library
-        Serial.println("initialization failed. Things to check:");
-        while (true);
-    }
-    Serial.println("initialization done.");*/
 }
 
 void loop ()

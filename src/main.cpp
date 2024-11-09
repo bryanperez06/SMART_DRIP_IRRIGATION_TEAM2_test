@@ -21,12 +21,16 @@ uint8_t seconds      = 30;
 static float Temperature    = 0.0;
 static float Humidity       = 0.0;
 
-int moistureSensor = 0;   //A0 pin for the ADC converter
+int moistureSensorA = 0;   //A0 pin for the ADC converter
+int moistureSensorB = 1;   //A1 pin for the ADC converter
 //const int redLEDPin = 3;           // red LED connected to digital pin (This is the valve in this simulation)
-float VoltageTotal;
-float SensorAverage;
+float VoltageTotalA;
+float VoltageTotalB;
+float SensorAverageA;
+float SensorAverageB;
 int x;
-float RawValue;
+float RawValueA;
+float RawValueB;
 
 #define Sensor_A   0
 #define Sensor_B   1
@@ -53,6 +57,10 @@ const byte COLS = 4;
 
 
 //Time state enums that help us accomodate the states the machine is in
+
+enum DisplayState{
+
+};
 
 enum TimeState
 {
@@ -97,69 +105,74 @@ Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS)
 LiquidCrystal_I2C lcd(0x27, 20, 4);  // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 
-//END OF KEYPAD SET UP
-void adc() {
-  //Let's average some values together to get a more accurate reading
-  Serial.print("Average of 50:\n");
-//Will need to add an if statement to check if its nighttime, so that it only runs at night
-
-  RawValue=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
-  SensorAverage=0;
-  VoltageTotal=0;
-  for (x=0; x<50; x++){
-    RawValue=analogRead(moistureSensor);
-    SensorAverage= RawValue*0.00488;//Use this conversion since ADC has 1024 bits of resolution
-    Serial.println(SensorAverage);
-    VoltageTotal=VoltageTotal + SensorAverage;
-    delay(500); //Will take a reading every 1 second
-    //Will add a way to kick out any outliers
-    }
-  
-  SensorAverage=VoltageTotal/50;//To find average
-  Serial.print("Sensor Average:");//checking serial port
-  Serial.println(SensorAverage);//Checked the values in excel, its averaging them correctly
-
-  //Now we will use this averaged value to determine when to open or close the valves
-    if (SensorAverage <= 2.0)  {
-    digitalWrite(Valve_A, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
-    Serial.print("High Loop\n");
-    //delay(900000) //This will allow it to water for 15 minutes will comment in once ready for testing
-    }
-    if (SensorAverage > 2.0) {
-      digitalWrite(Valve_A,LOW);  //We will have to reset it otherwise the valve will stay on
-      //delay(900000) //This will close the valves for 15 minutes and then recheck the moisture level
-    }
+//Prints to LCD
+void printToLCD(int line, String message)
+{
+    lcd.setCursor(0, line);
+    lcd.print(message);
 }
 
-void printRealTime(){
-  Serial.print("Date: ");
-  Serial.print(now.month());
-  Serial.print(" ");
-  Serial.print(now.day());
-  Serial.print(", ");
-  Serial.print(now.year());
+//END OF KEYPAD SET UP
+void adcA() {
+    RawValueA=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
+    SensorAverageA=0;
+    VoltageTotalA=0;
+    for (x=0; x<50; x++){
+        RawValueA=analogRead(moistureSensorA);
+        SensorAverageA= RawValueA*0.00488;//Use this conversion since ADC has 1024 bits of resolution
+        Serial.println(SensorAverageA);
+        VoltageTotalA=VoltageTotalA + SensorAverageA;
+        delay(500); //Will take a reading every 1 second
+        //Will add a way to kick out any outliers
+    }
+  
+    SensorAverageA=VoltageTotalA/50;//To find average
+    //Now we will use this averaged value to determine when to open or close the valves
+}
 
-  Serial.print(" Time: ");
-  Serial.print(now.hour());
-  Serial.print(":");
-  Serial.print(now.minute());
-  Serial.print(":");
-  Serial.print(now.second());
-  Serial.print(" ");
-};
+void adcB() {
+    RawValueB=0; //Have to reset the values before the for loop because they will add onto the previous iteration and youll get a value >5V which is bad
+    SensorAverageB=0;
+    VoltageTotalB=0;
+    for (x=0; x<50; x++){
+        RawValueB=analogRead(moistureSensorB);
+        SensorAverageB= RawValueB*0.00488;//Use this conversion since ADC has 1024 bits of resolution
+        Serial.println(SensorAverageA);
+        VoltageTotalB=VoltageTotalB + SensorAverageB;
+        delay(500); //Will take a reading every 1 second
+        //Will add a way to kick out any outliers
+    }
+  
+    SensorAverageB=VoltageTotalB/50;//To find average
+    //Now we will use this averaged value to determine when to open or close the valves
+}
 
-void printTempHumid(){
+void printData(){
+    Serial.print("Date: ");
+    Serial.print(now.month());
+    Serial.print(" ");
+    Serial.print(now.day());
+    Serial.print(", ");
+    Serial.print(now.year());
+
+    Serial.print(" Time: ");
+    Serial.print(now.hour());
+    Serial.print(":");
+    Serial.print(now.minute());
+    Serial.print(":");
+    Serial.print(now.second());
+    Serial.print(" ");
+
     Temperature= tempHumid.readTemperature();
     Humidity= tempHumid.readHumidity();
-
+    
     Serial.print("Temperature: ");
     Serial.print(Temperature);
     Serial.print("°C ");
     Serial.print("Humidity: ");
     Serial.print(Humidity);
     Serial.println("%");
-
-}
+};
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
   RTC.begin();
@@ -174,45 +187,37 @@ void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s
   
 };
 
-void checkTime(){
+void sleepMode(){
+    //display sleep state
+    lcd.clear();
+    printToLCD(0,"Entering");
+    printToLCD(1, "Sleep mode...");
+    delay(3000);
 
+    //turn off LCD
+    lcd.clear();
+    lcd.noBacklight();
+    
+    //keep checking time to determing when to wake up
     while (1){
-        delay(1000);
-        
-        now = RTC.now();
-        
-        printRealTime();
-        printTempHumid();
-
-        //writeRTC();
-        //writeSDTempHumid();
-        
-        if (now.second()%10 == 0 || now.second()%10 == 0){
-        
-        switch(WateringState){
-            case OFF:
-
-            WateringState=ON;
-            digitalWrite(Valve_A, HIGH);
-            digitalWrite(Valve_B, HIGH);
-            //digitalWrite(Sensor_A, HIGH);
-            //digitalWrite(Sensor_B, HIGH);
-            break;
-            case ON:
-            
-            WateringState=OFF;
-            digitalWrite(Valve_A, LOW);
-            digitalWrite(Valve_B, LOW);
-            //digitalWrite(Sensor_A, LOW);
-            //digitalWrite(Sensor_B, LOW);
-            break;
-            }
-        //adc();
+        now=RTC.now();
+        // if between the hours of 6pm and 3am
+        if (now.hour() <= 5 || now.hour() >=18){
+            lcd.backlight();
+            lcd.clear();
+            printToLCD(0,"Waking up...");
+            delay(1000);
+            return;
         }
     }
-}
+};
 
 void automaticMode(){
+    //display automatic state
+    lcd.clear();
+    printToLCD(0,"In Autnomous");
+    printToLCD(1,"Mode");
+
     //setup pins for relays connnecting to valves and sensors
 
     //valves A and B respectively
@@ -223,36 +228,83 @@ void automaticMode(){
     pinMode(Sensor_A, OUTPUT);
     pinMode(Sensor_B, OUTPUT);
 
-    now = RTC.now();
-
     while (1){
-        
+
+        now = RTC.now();
+        printData();
+        delay(1000);
         //once its 6am, go back to check time
-        if (now.hour() > 5){
+        if (now.hour() >5 && now.hour() < 18){
+            digitalWrite(Valve_A,LOW);
+            digitalWrite(Valve_B,LOW);
             return;
         }
 
         //water at 6pm, 9pm, 12pm, and 3am, for 1 hour at each time interval
         if(now.hour()== 18 || //6pm
-           now.hour()== 18 || //9pm
-           now.hour()== 18 || //12pm
-           now.hour()== 18    //3am
+           now.hour()== 21 || //9pm
+           now.hour()== 0 || //12am
+           now.hour()== 3    //3am
            ){
-
+            Serial.println("Watering Hour");
             //check sensors to check moisure
-            adc();
-            if (SensorAverage <= 2.0)  {
+            //adcA();
+            //adcB();
+            if(digitalRead(2) ==HIGH){
+                Serial.println("Selectable Mode is on");
+                //since adc was just called, dont call again
+                //store to SD card
+            }
+
+            /*if (SensorAverageA <= 2.0 && SensorAverageB <= 2.0)  {
                 digitalWrite(Valve_A, HIGH);
                 digitalWrite(Valve_B, HIGH);
             }
-            if (SensorAverage > 2.0) {
-                digitalWrite(Valve_A,LOW);
-                digitalWrite(Valve_B,LOW);
+            else{
+                digitalWrite(Valve_A, LOW);
+                digitalWrite(Valve_B, LOW);
+            }*/
+
+        }
+        //turn off valves if its not 6pm, 9pm, 12am, 3am
+        else {
+            Serial.println("Not watering hour");
+            digitalWrite(Valve_A,LOW);
+            digitalWrite(Valve_B,LOW);
+            if(digitalRead(2) ==HIGH){
+                Serial.println("Selectable Mode is on");
+                //call adc to update values
+                //store to SD card
             }
         }
+        
     }
 
 };
+
+void checkTime(){
+
+    while (1){
+        delay(1000);
+        
+        now = RTC.now();
+        
+        printData();
+
+        if(now.hour() >5 && now.hour() < 18){
+            //sleep mode
+            //just print to LCD and turn off
+            Serial.println("Should be asleep");
+            sleepMode();
+        }
+        else if (now.hour() <= 5 || now.hour() >=18){
+            //automatic mode
+            Serial.println("Should be awake");
+            automaticMode();
+        }
+    }
+};
+
 // A function that returns the number of characters in the string object
 int getLength(const String& s)
 {
@@ -305,12 +357,6 @@ int stringToInt(const String& s)
     return result * sign;
 }
 
-//Prints to LCD
-void printToLCD(int line, String message)
-{
-    lcd.setCursor(0, line);
-    lcd.print(message);
-}
 //displaying to the menu
 void displayMainMenu(TimeState state)
 {

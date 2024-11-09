@@ -201,7 +201,7 @@ void sleepMode(){
     //keep checking time to determing when to wake up
     while (1){
         now=RTC.now();
-        // if between the hours of 6pm and 3am
+        // if between the hours of 6pm and 6am
         if (now.hour() <= 5 || now.hour() >=18){
             lcd.backlight();
             lcd.clear();

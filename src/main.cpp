@@ -6,7 +6,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
-#include <SoftwareSerial.h>
+//#include <SoftwareSerial.h>
 //#include <SdFat.h>
 //#include <DS3231.h>
 
@@ -34,10 +34,10 @@ int x;
 float RawValueA;
 float RawValueB;
 
-#define Sensor_A   0
-#define Sensor_B   1
-#define Valve_A    16
-#define Valve_B    17
+#define Sensor_A   16
+#define Sensor_B   17
+#define Valve_A    0
+#define Valve_B    1
 
 //SdFat SD;
 //File dataFile;
@@ -59,7 +59,7 @@ String secondInput    = "";
 const byte ROWS = 4; 
 const byte COLS = 4; 
 
-SoftwareSerial BTSerial(12,13);
+//SoftwareSerial BTSerial(12,13);
 
 
 //Time state enums that help us accomodate the states the machine is in
@@ -870,6 +870,11 @@ void setup(){
   lcd.clear();
   lcd.clear();
 
+  pinMode(Valve_A, OUTPUT);
+  pinMode(Valve_B, OUTPUT);
+
+  digitalWrite(Valve_A,LOW);
+  digitalWrite(Valve_B,LOW);
 
 }
 

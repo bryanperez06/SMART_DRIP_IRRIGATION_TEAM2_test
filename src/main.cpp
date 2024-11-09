@@ -6,6 +6,8 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <SoftwareSerial.h>
+//#include <SdFat.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -37,6 +39,8 @@ float RawValueB;
 #define Valve_A    16
 #define Valve_B    17
 
+//SdFat SD;
+//File dataFile;
 
 RTC_DS3231 RTC;
 DateTime now;
@@ -54,6 +58,8 @@ String minuteInput    = "";
 String secondInput    = "";
 const byte ROWS = 4; 
 const byte COLS = 4; 
+
+SoftwareSerial BTSerial(12,13);
 
 
 //Time state enums that help us accomodate the states the machine is in
@@ -120,7 +126,6 @@ void adcA() {
     for (x=0; x<50; x++){
         RawValueA=analogRead(moistureSensorA);
         SensorAverageA= RawValueA*0.00488;//Use this conversion since ADC has 1024 bits of resolution
-        Serial.println(SensorAverageA);
         VoltageTotalA=VoltageTotalA + SensorAverageA;
         delay(500); //Will take a reading every 1 second
         //Will add a way to kick out any outliers
@@ -137,7 +142,6 @@ void adcB() {
     for (x=0; x<50; x++){
         RawValueB=analogRead(moistureSensorB);
         SensorAverageB= RawValueB*0.00488;//Use this conversion since ADC has 1024 bits of resolution
-        Serial.println(SensorAverageA);
         VoltageTotalB=VoltageTotalB + SensorAverageB;
         delay(500); //Will take a reading every 1 second
         //Will add a way to kick out any outliers
@@ -147,7 +151,7 @@ void adcB() {
     //Now we will use this averaged value to determine when to open or close the valves
 }
 
-void printData(){
+/*(void printData(){
     Serial.print("Date: ");
     Serial.print(now.month());
     Serial.print(" ");
@@ -172,7 +176,7 @@ void printData(){
     Serial.print("Humidity: ");
     Serial.print(Humidity);
     Serial.println("%");
-};
+};*/
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
   RTC.begin();
@@ -231,7 +235,7 @@ void automaticMode(){
     while (1){
 
         now = RTC.now();
-        printData();
+        //printData();
         delay(1000);
         //once its 6am, go back to check time
         if (now.hour() >5 && now.hour() < 18){
@@ -246,33 +250,49 @@ void automaticMode(){
            now.hour()== 0 || //12am
            now.hour()== 3    //3am
            ){
-            Serial.println("Watering Hour");
+            //Serial.println("Watering Hour");
             //check sensors to check moisure
-            //adcA();
-            //adcB();
+            digitalWrite(Sensor_A, HIGH);
+            delay(3000);
+            adcA();
+            digitalWrite(Sensor_A, LOW);
+
+            digitalWrite(Sensor_B, HIGH);
+            delay(3000);
+            adcB();
+            digitalWrite(Sensor_B, LOW);
+
             if(digitalRead(2) ==HIGH){
-                Serial.println("Selectable Mode is on");
+                //Serial.println("Selectable Mode is on");
                 //since adc was just called, dont call again
                 //store to SD card
             }
 
-            /*if (SensorAverageA <= 2.0 && SensorAverageB <= 2.0)  {
-                digitalWrite(Valve_A, HIGH);
-                digitalWrite(Valve_B, HIGH);
+            if (SensorAverageA <= 2.0)  {
+                digitalWrite(Valve_A, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
+                //Serial.print("High Loop\n");
             }
-            else{
-                digitalWrite(Valve_A, LOW);
-                digitalWrite(Valve_B, LOW);
-            }*/
+            if (SensorAverageA > 2.0) {
+                digitalWrite(Valve_A,LOW);  //We will have to reset it otherwise the valve will stay on
+            }
+
+            if (SensorAverageB <= 2.4)  {
+                digitalWrite(Valve_B, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
+                //Serial.print("High Loop\n");
+            }
+            if (SensorAverageB > 2.4) {
+                digitalWrite(Valve_B,LOW);  //We will have to reset it otherwise the valve will stay on
+            }
+
 
         }
         //turn off valves if its not 6pm, 9pm, 12am, 3am
         else {
-            Serial.println("Not watering hour");
+            //Serial.println("Not watering hour");
             digitalWrite(Valve_A,LOW);
             digitalWrite(Valve_B,LOW);
             if(digitalRead(2) ==HIGH){
-                Serial.println("Selectable Mode is on");
+                //Serial.println("Selectable Mode is on");
                 //call adc to update values
                 //store to SD card
             }
@@ -289,17 +309,17 @@ void checkTime(){
         
         now = RTC.now();
         
-        printData();
+        //printData();
 
         if(now.hour() >5 && now.hour() < 18){
             //sleep mode
             //just print to LCD and turn off
-            Serial.println("Should be asleep");
+            //Serial.println("Should be asleep");
             sleepMode();
         }
         else if (now.hour() <= 5 || now.hour() >=18){
             //automatic mode
-            Serial.println("Should be awake");
+            //Serial.println("Should be awake");
             automaticMode();
         }
     }
@@ -838,7 +858,7 @@ void handleMenuInput(char key)
 }
 //set up
 void setup(){
-  Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  //Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
   pinMode(2, INPUT );
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 
@@ -850,6 +870,7 @@ void setup(){
   lcd.clear();
   lcd.clear();
 
+
 }
 
 void loop ()
@@ -859,6 +880,6 @@ void loop ()
     if (key ) 
     {
         handleMenuInput(key); 
-        Serial.println(key);
+        //Serial.println(key);
     }
 }

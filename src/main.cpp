@@ -59,7 +59,7 @@ String secondInput    = "";
 const byte ROWS = 4; 
 const byte COLS = 4; 
 
-//SoftwareSerial BTSerial(12,13);
+SoftwareSerial BTSerial(12,13);
 
 
 //Time state enums that help us accomodate the states the machine is in
@@ -151,32 +151,33 @@ void adcB() {
     //Now we will use this averaged value to determine when to open or close the valves
 }
 
-/*(void printData(){
-    Serial.print("Date: ");
-    Serial.print(now.month());
-    Serial.print(" ");
-    Serial.print(now.day());
-    Serial.print(", ");
-    Serial.print(now.year());
+void printData(){
+    now= RTC.now();
+    BTSerial.print("Date: ");
+    BTSerial.print(now.month());
+    BTSerial.print(" ");
+    BTSerial.print(now.day());
+    BTSerial.print(", ");
+    BTSerial.print(now.year());
 
-    Serial.print(" Time: ");
-    Serial.print(now.hour());
-    Serial.print(":");
-    Serial.print(now.minute());
-    Serial.print(":");
-    Serial.print(now.second());
-    Serial.print(" ");
+    BTSerial.print(" Time: ");
+    BTSerial.print(now.hour());
+    BTSerial.print(":");
+    BTSerial.print(now.minute());
+    BTSerial.print(":");
+    BTSerial.print(now.second());
+    BTSerial.print(" ");
 
     Temperature= tempHumid.readTemperature();
     Humidity= tempHumid.readHumidity();
     
-    Serial.print("Temperature: ");
-    Serial.print(Temperature);
-    Serial.print("°C ");
-    Serial.print("Humidity: ");
-    Serial.print(Humidity);
-    Serial.println("%");
-};*/
+    BTSerial.print("Temperature: ");
+    BTSerial.print(Temperature);
+    BTSerial.print("°C ");
+    BTSerial.print("Humidity: ");
+    BTSerial.print(Humidity);
+    BTSerial.println("%");
+};
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
   RTC.begin();
@@ -265,7 +266,15 @@ void automaticMode(){
             if(digitalRead(2) ==HIGH){
                 //Serial.println("Selectable Mode is on");
                 //since adc was just called, dont call again
-                //store to SD card
+                //send to BT
+                BTSerial.write("\n");
+                BTSerial.write("ADC A: ");
+                BTSerial.write(SensorAverageA);
+                BTSerial.write(" ");
+                BTSerial.write("ADC B: ");
+                BTSerial.write(SensorAverageB);
+                BTSerial.write("\n");
+                printData();
             }
 
             if (SensorAverageA <= 2.0)  {
@@ -859,6 +868,7 @@ void handleMenuInput(char key)
 //set up
 void setup(){
   //Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  BTSerial.begin(38400);
   pinMode(2, INPUT );
   TimeState currentMenu = START;
   lcd.init();          // initialize the lcd 

@@ -6,6 +6,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
+#include <SoftwareSerial.h>
 //#include <DS3231.h>
 
 using namespace std;
@@ -49,6 +50,8 @@ String secondInput    = "";
 const byte ROWS = 4; 
 const byte COLS = 4; 
 
+
+SoftwareSerial BTSerial(12,13);
 
 //Time state enums that help us accomodate the states the machine is in
 
@@ -752,23 +755,25 @@ void handleMenuInput(char key)
 }
 //set up
 void setup(){
-  //Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
-  /*pinMode(PC2, OUTPUT);
+  Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  pinMode(PC2, OUTPUT);
   pinMode(PC3, OUTPUT);
   TimeState currentMenu = START;
-  lcd.init();          // initialize the lcd 
-  lcd.backlight();
-  lcd.clear();
+  //lcd.init();          // initialize the lcd 
+  //lcd.backlight();
+  //lcd.clear();
 
   Wire.begin(); //starts i2c interface
 
-  lcd.clear();
+  //lcd.clear();
   // printToLCD(0, "Welcome to Smart ");
   // printToLCD(1, "Drip Irrigation!");
   // printToLCD(2, "Lets set the time");
   // printToLCD(3, "Press # to start!");
-  lcd.clear();
-  // printToLCD(0, "Set time");*/
+  //lcd.clear();
+  // printToLCD(0, "Set time");
+
+  BTSerial.begin(38400);
 
   pinMode(0, OUTPUT);
   pinMode(1, OUTPUT);
@@ -787,17 +792,7 @@ void loop ()
         handleMenuInput(key); 
         Serial.println(key);
     }*/
-
-    digitalWrite(0,HIGH);
-    digitalWrite(1,HIGH);
-    digitalWrite(13,HIGH);
-    digitalWrite(16,HIGH);
-    digitalWrite(17,HIGH);
-    delay(2000);
-    digitalWrite(0,LOW);
-    digitalWrite(1,LOW);
-    digitalWrite(13,LOW);
-    digitalWrite(16,LOW);
-    digitalWrite(17,LOW);
-    delay(2000);
+   BTSerial.write("\n");
+   BTSerial.write("test\n");
+   delay(5000);
 }

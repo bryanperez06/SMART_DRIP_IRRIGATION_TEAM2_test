@@ -6,7 +6,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
-//#include <SoftwareSerial.h>
+#include <SoftwareSerial.h>
 //#include <SdFat.h>
 //#include <DS3231.h>
 

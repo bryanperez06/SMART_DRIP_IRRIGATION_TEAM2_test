@@ -153,12 +153,12 @@ void printTempHumid(){
     Temperature= tempHumid.readTemperature();
     Humidity= tempHumid.readHumidity();
 
-    Serial.print("Temperature: ");
-    Serial.print(Temperature);
-    Serial.print("°C ");
-    Serial.print("Humidity: ");
-    Serial.print(Humidity);
-    Serial.println("%");
+    BTSerial.print("Temperature: ");
+    BTSerial.print(Temperature);
+    BTSerial.print("°C ");
+    BTSerial.print("Humidity: ");
+    BTSerial.print(Humidity);
+    BTSerial.println("%");
 
 }
 
@@ -793,6 +793,7 @@ void loop ()
         Serial.println(key);
     }*/
    BTSerial.write("\n");
-   BTSerial.write("test\n");
+   //BTSerial.write("Bryan wants to test this\n");
+   printTempHumid();
    delay(5000);
 }

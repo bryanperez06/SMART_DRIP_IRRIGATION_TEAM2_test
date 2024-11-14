@@ -28,8 +28,8 @@ int moistureSensorB = 1;   //A1 pin for the ADC converter
 //const int redLEDPin = 3;           // red LED connected to digital pin (This is the valve in this simulation)
 float VoltageTotalA;
 float VoltageTotalB;
-float SensorAverageA;
-float SensorAverageB;
+float SensorAverageA=0.0;
+static float SensorAverageB=0.0;
 int x;
 float RawValueA;
 float RawValueB;
@@ -220,7 +220,7 @@ void sleepMode(){
 void automaticMode(){
     //display automatic state
     lcd.clear();
-    printToLCD(0,"In Autnomous");
+    printToLCD(0,"In Autonomous");
     printToLCD(1,"Mode");
 
     //setup pins for relays connnecting to valves and sensors
@@ -267,14 +267,32 @@ void automaticMode(){
                 //Serial.println("Selectable Mode is on");
                 //since adc was just called, dont call again
                 //send to BT
+                lcd.clear();
+                printToLCD(0,"Collecting data..");
+                printToLCD(2,"Connect to ");
+                printToLCD(3, "bluetooth");
+
+                delay(10000);
+                lcd.clear();
+                String a=String(SensorAverageA);
+                String b=String(SensorAverageB);
+                printToLCD(0,a);
+                printToLCD(1,b);
+                delay(10000);
+
                 BTSerial.write("\n");
-                BTSerial.write("ADC A: ");
-                BTSerial.write(SensorAverageA);
+                BTSerial.write("10 CM sensor: ");
+                BTSerial.write(char(SensorAverageA));
                 BTSerial.write(" ");
-                BTSerial.write("ADC B: ");
-                BTSerial.write(SensorAverageB);
+                BTSerial.write("\n");
+                BTSerial.write("30 CM sensor: ");
+                BTSerial.write(char(SensorAverageB));
                 BTSerial.write("\n");
                 printData();
+
+                lcd.clear();
+                printToLCD(0,"In Autonomous");
+                printToLCD(1,"Mode");
             }
 
             if (SensorAverageA <= 2.0)  {
@@ -301,9 +319,32 @@ void automaticMode(){
             digitalWrite(Valve_A,LOW);
             digitalWrite(Valve_B,LOW);
             if(digitalRead(2) ==HIGH){
+                lcd.clear();
+                printToLCD(0,"Collecting data");
+                printToLCD(1,"Data...");
+                printToLCD(2,"Connect to ");
+                printToLCD(3, "bluetooth");
+
+
                 //Serial.println("Selectable Mode is on");
-                //call adc to update values
-                //store to SD card
+                adcA();
+                adcB();
+
+                delay(10000);
+                BTSerial.write("\n");
+                BTSerial.write("10 CM sensor: ");
+                BTSerial.write(SensorAverageA);
+                BTSerial.write(" ");
+                BTSerial.write("\n");
+                BTSerial.write("30 CM sensor: ");
+                BTSerial.write(SensorAverageB);
+                BTSerial.write("\n");
+                printData();
+
+                lcd.clear();
+                printToLCD(0,"In Autonomous");
+                printToLCD(1,"Mode");
+
             }
         }
         
@@ -885,7 +926,7 @@ void setup(){
 
   digitalWrite(Valve_A,LOW);
   digitalWrite(Valve_B,LOW);
-
+  BTSerial.write("Select side button for Selectable Mode");
 }
 
 void loop ()

@@ -7,6 +7,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <Keypad.h>
 #include <SoftwareSerial.h>
+#include <floatToString.h>
 //#include <SdFat.h>
 //#include <DS3231.h>
 
@@ -29,7 +30,7 @@ int moistureSensorB = 1;   //A1 pin for the ADC converter
 float VoltageTotalA;
 float VoltageTotalB;
 float SensorAverageA=0.0;
-static float SensorAverageB=0.0;
+float SensorAverageB=0.0;
 int x;
 float RawValueA;
 float RawValueB;
@@ -280,14 +281,15 @@ void automaticMode(){
                 printToLCD(1,b);
                 delay(10000);
 
-                BTSerial.write("\n");
-                BTSerial.write("10 CM sensor: ");
-                BTSerial.write(char(SensorAverageA));
-                BTSerial.write(" ");
-                BTSerial.write("\n");
-                BTSerial.write("30 CM sensor: ");
-                BTSerial.write(char(SensorAverageB));
-                BTSerial.write("\n");
+                BTSerial.print("\n");
+                BTSerial.print("10 CM sensor: ");
+                BTSerial.print(SensorAverageA);
+                BTSerial.print(" ");
+                BTSerial.print("\n");
+
+                BTSerial.print("30 CM sensor: ");
+                BTSerial.print(SensorAverageB);
+                BTSerial.print("\n");
                 printData();
 
                 lcd.clear();

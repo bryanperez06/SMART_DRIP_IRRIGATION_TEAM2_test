@@ -14,19 +14,21 @@
 using namespace std;
 
 //important global integers in regards to the time 
-uint16_t years       = 2023; 
+uint16_t years       = 2024; 
 uint8_t months       = 01; 
 uint8_t days         = 01;
 uint8_t hours        = 00;
 uint8_t minutes      = 00;
 uint8_t seconds      = 30;
 
+//Variable holders for temp/humid sensor for printing to LCD and Bluetooth Transmission
 static float Temperature    = 0.0;
 static float Humidity       = 0.0;
 
 int moistureSensorA = 0;   //A0 pin for the ADC converter
 int moistureSensorB = 1;   //A1 pin for the ADC converter
-//const int redLEDPin = 3;           // red LED connected to digital pin (This is the valve in this simulation)
+
+//Variables used for adcA() and adcB()
 float VoltageTotalA;
 float VoltageTotalB;
 float SensorAverageA=0.0;
@@ -35,14 +37,13 @@ int x;
 float RawValueA;
 float RawValueB;
 
+//Corresponding pins on MetroMini for our purposes
 #define Sensor_A   16
 #define Sensor_B   17
 #define Valve_A    0
 #define Valve_B    1
 
-//SdFat SD;
-//File dataFile;
-
+//Defining variables for RealTime Clock and peripherals
 RTC_DS3231 RTC;
 DateTime now;
 Adafruit_Si7021 tempHumid;
@@ -60,15 +61,10 @@ String secondInput    = "";
 const byte ROWS = 4; 
 const byte COLS = 4; 
 
+//Pins used for Bluetooth transmission
 SoftwareSerial BTSerial(12,13);
 
-
-//Time state enums that help us accomodate the states the machine is in
-
-enum DisplayState{
-
-};
-
+//Menu state to determine switch cases in handleMenu() and displayMenu()
 enum TimeState
 {
     START,
@@ -88,6 +84,7 @@ enum TimeState
     DONE
 };
 
+//State to determine previous watering state
 enum WateringMode{
   ON,
   OFF
@@ -125,15 +122,14 @@ void adcA() {
     SensorAverageA=0;
     VoltageTotalA=0;
     for (x=0; x<50; x++){
-        RawValueA=analogRead(moistureSensorA);
+        RawValueA=analogRead(moistureSensorA); //Read ADC from Channel for sensor set A
         SensorAverageA= RawValueA*0.00488;//Use this conversion since ADC has 1024 bits of resolution
-        VoltageTotalA=VoltageTotalA + SensorAverageA;
+        VoltageTotalA=VoltageTotalA + SensorAverageA;//Accumulate readings for average
         delay(500); //Will take a reading every 1 second
         //Will add a way to kick out any outliers
     }
   
     SensorAverageA=VoltageTotalA/50;//To find average
-    //Now we will use this averaged value to determine when to open or close the valves
 }
 
 void adcB() {
@@ -141,7 +137,7 @@ void adcB() {
     SensorAverageB=0;
     VoltageTotalB=0;
     for (x=0; x<50; x++){
-        RawValueB=analogRead(moistureSensorB);
+        RawValueB=analogRead(moistureSensorB);//Read ADC from Channel for sensor set B
         SensorAverageB= RawValueB*0.00488;//Use this conversion since ADC has 1024 bits of resolution
         VoltageTotalB=VoltageTotalB + SensorAverageB;
         delay(500); //Will take a reading every 1 second
@@ -149,10 +145,10 @@ void adcB() {
     }
   
     SensorAverageB=VoltageTotalB/50;//To find average
-    //Now we will use this averaged value to determine when to open or close the valves
 }
 
 void printData(){
+    //Formatting for Bluetooth data transmission
     now= RTC.now();
     BTSerial.print("Date: ");
     BTSerial.print(now.month());
@@ -172,8 +168,11 @@ void printData(){
     Temperature= tempHumid.readTemperature();
     Humidity= tempHumid.readHumidity();
     
-    BTSerial.print("Temperature: ");
+    BTSerial.print("Temperature inside box: ");
     BTSerial.print(Temperature);
+    BTSerial.print("°C ");
+    BTSerial.print("Outside box: ");
+    BTSerial.print(Temperature + 5.0);
     BTSerial.print("°C ");
     BTSerial.print("Humidity: ");
     BTSerial.print(Humidity);
@@ -181,15 +180,18 @@ void printData(){
 };
 
 void initRTC(uint16_t y, uint8_t m, uint8_t d, uint8_t h, uint8_t min, uint8_t s){
-  RTC.begin();
+    //Must first start Real Time Clock to allow for initalizing
+    RTC.begin();
 
-  RTC.disableAlarm(1);
-  RTC.disableAlarm(2);
-  RTC.clearAlarm(1);
-  RTC.clearAlarm(2);
-  RTC.adjust(DateTime(y, m, d, h, min, s));
+    RTC.disableAlarm(1);
+    RTC.disableAlarm(2);
+    RTC.clearAlarm(1);
+    RTC.clearAlarm(2);
 
-  now = RTC.now();
+    //Set inputed time and date into Real Time Clock
+    RTC.adjust(DateTime(y, m, d, h, min, s));
+
+    now = RTC.now();
   
 };
 
@@ -218,14 +220,13 @@ void sleepMode(){
     }
 };
 
-void automaticMode(){
+void autonomousMode(){
     //display automatic state
     lcd.clear();
     printToLCD(0,"In Autonomous");
     printToLCD(1,"Mode");
 
     //setup pins for relays connnecting to valves and sensors
-
     //valves A and B respectively
     pinMode(Valve_A, OUTPUT);
     pinMode(Valve_B, OUTPUT);
@@ -235,25 +236,24 @@ void automaticMode(){
     pinMode(Sensor_B, OUTPUT);
 
     while (1){
-
         now = RTC.now();
-        //printData();
         delay(1000);
-        //once its 6am, go back to check time
-        if (now.hour() >5 && now.hour() < 18){
+
+        //once its 7am, go back to check time
+        if (now.hour() >6 && now.hour() < 18){
             digitalWrite(Valve_A,LOW);
             digitalWrite(Valve_B,LOW);
             return;
         }
 
-        //water at 6pm, 9pm, 12pm, and 3am, for 1 hour at each time interval
-        if(now.hour()== 18 || //6pm
-           now.hour()== 21 || //9pm
-           now.hour()== 0 || //12am
-           now.hour()== 3    //3am
+        //water at 6pm, 9pm, 12pm, 3am, and 6am for 1 hour at each time interval
+        if( (now.hour()== 18 && now.minute <=30) || //6pm before 30 minute
+            (now.hour()== 21 && now.minute <=30) || //9pm before 30 minute
+            (now.hour()== 0 && now.minute <=30) ||  //12am before 30 minute
+            (now.hour()== 3 && now.minute <=30)||   //3am before 30 minute
+            (now.hour()==6 && now.minute <=30)      //6am before 30 minute
            ){
-            //Serial.println("Watering Hour");
-            //check sensors to check moisure
+            //Activate relays to allow sensors to measure moisture and call ADC
             digitalWrite(Sensor_A, HIGH);
             delay(3000);
             adcA();
@@ -264,8 +264,8 @@ void automaticMode(){
             adcB();
             digitalWrite(Sensor_B, LOW);
 
+            //Determine if selectable mode is on
             if(digitalRead(2) ==HIGH){
-                //Serial.println("Selectable Mode is on");
                 //since adc was just called, dont call again
                 //send to BT
                 lcd.clear();
@@ -274,32 +274,48 @@ void automaticMode(){
                 printToLCD(3, "bluetooth");
 
                 delay(10000);
-                lcd.clear();
-                String a=String(SensorAverageA);
-                String b=String(SensorAverageB);
-                printToLCD(0,a);
-                printToLCD(1,b);
-                delay(10000);
 
+                //print values and state to Bluetooth
+
+                ///////////////////////////////////Sensor set A, 10 CM
                 BTSerial.print("\n");
                 BTSerial.print("10 CM sensor: ");
                 BTSerial.print(SensorAverageA);
                 BTSerial.print(" ");
                 BTSerial.print("\n");
-
+                //indicate watering mission for 10CM
+                if(SensorAverageA <= 2){
+                    BTSerial.print("Watering Mission");
+                }
+                else if( SensorAverageA >=2){
+                    BTSerial.print("Dry Mission");
+                }
+                BTSerial.print(" ");
+                BTSerial.print("\n");
+                ////////////////////////////////////Sensor set B, 30CM
                 BTSerial.print("30 CM sensor: ");
                 BTSerial.print(SensorAverageB);
                 BTSerial.print("\n");
+                //indicate watering mission for 30CM
+                if(SensorAverageA <= 2.4){
+                    BTSerial.print("Watering Mission");
+                }
+                else if( SensorAverageA >=2.4){
+                    BTSerial.print("Dry Mission");
+                }
+                BTSerial.print(" ");
+                BTSerial.print("\n");
+                //////////////////////////////////////
                 printData();
-
+                
                 lcd.clear();
                 printToLCD(0,"In Autonomous");
                 printToLCD(1,"Mode");
             }
 
+            //Determine whether or not to water
             if (SensorAverageA <= 2.0)  {
                 digitalWrite(Valve_A, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
-                //Serial.print("High Loop\n");
             }
             if (SensorAverageA > 2.0) {
                 digitalWrite(Valve_A,LOW);  //We will have to reset it otherwise the valve will stay on
@@ -307,7 +323,6 @@ void automaticMode(){
 
             if (SensorAverageB <= 2.4)  {
                 digitalWrite(Valve_B, HIGH);      // if moisture is less than 300 (dry soil) turn the valve on
-                //Serial.print("High Loop\n");
             }
             if (SensorAverageB > 2.4) {
                 digitalWrite(Valve_B,LOW);  //We will have to reset it otherwise the valve will stay on
@@ -315,23 +330,33 @@ void automaticMode(){
 
 
         }
-        //turn off valves if its not 6pm, 9pm, 12am, 3am
+        //turn off valves if its not 6pm, 9pm, 12am, 3am, and 6am and before 30 minute mark
         else {
-            //Serial.println("Not watering hour");
+            //turn off valves
             digitalWrite(Valve_A,LOW);
             digitalWrite(Valve_B,LOW);
+
+            //Determine if selectable mode is on
             if(digitalRead(2) ==HIGH){
+                //Communicate to user that system is preparing to transmit data via Bluetooth
                 lcd.clear();
                 printToLCD(0,"Collecting data");
                 printToLCD(1,"Data...");
                 printToLCD(2,"Connect to ");
                 printToLCD(3, "bluetooth");
 
-
-                //Serial.println("Selectable Mode is on");
+                //Activate relays to allow sensors to measure moisture and call ADC
+                digitalWrite(Sensor_A, HIGH);
+                delay(3000);
                 adcA();
-                adcB();
+                digitalWrite(Sensor_A, LOW);
 
+                digitalWrite(Sensor_B, HIGH);
+                delay(3000);
+                adcB();
+                digitalWrite(Sensor_B, LOW);
+
+                //Transmit Data via Bluetooth, not including watering mission
                 delay(10000);
                 BTSerial.write("\n");
                 BTSerial.write("10 CM sensor: ");
@@ -355,24 +380,20 @@ void automaticMode(){
 };
 
 void checkTime(){
-
+    //Main while loop to determine when to enter sleepMode or autonomousMode
     while (1){
         delay(1000);
-        
         now = RTC.now();
-        
-        //printData();
 
+        //if (after 6am and before 6pm)
         if(now.hour() >5 && now.hour() < 18){
             //sleep mode
-            //just print to LCD and turn off
-            //Serial.println("Should be asleep");
             sleepMode();
         }
+        //else if (before 6am and after 6pm)
         else if (now.hour() <= 5 || now.hour() >=18){
-            //automatic mode
-            //Serial.println("Should be awake");
-            automaticMode();
+            //autonomous mode
+            autonomousMode();
         }
     }
 };
@@ -910,24 +931,26 @@ void handleMenuInput(char key)
 }
 //set up
 void setup(){
-  //Serial.begin(115200); //KEEP THIS NUMBER it starts the correct serial port
+  //Set baudrate for BT transmiter
   BTSerial.begin(38400);
+  //Setting pin for selectable mode
   pinMode(2, INPUT );
+  //Starting point for guided menu
   TimeState currentMenu = START;
+
   lcd.init();          // initialize the lcd 
   lcd.backlight();
   lcd.clear();
-
   Wire.begin(); //starts i2c interface
-
-  lcd.clear();
   lcd.clear();
 
+  //Configure and set valve outputs
   pinMode(Valve_A, OUTPUT);
   pinMode(Valve_B, OUTPUT);
-
   digitalWrite(Valve_A,LOW);
   digitalWrite(Valve_B,LOW);
+
+  //Inidcate to user that selectable mode is available
   BTSerial.write("Select side button for Selectable Mode");
 }
 
@@ -938,6 +961,5 @@ void loop ()
     if (key ) 
     {
         handleMenuInput(key); 
-        //Serial.println(key);
     }
 }

@@ -247,11 +247,11 @@ void autonomousMode(){
         }
 
         //water at 6pm, 9pm, 12pm, 3am, and 6am for 1 hour at each time interval
-        if( (now.hour()== 18 && now.minute <=30) || //6pm before 30 minute
-            (now.hour()== 21 && now.minute <=30) || //9pm before 30 minute
-            (now.hour()== 0 && now.minute <=30) ||  //12am before 30 minute
-            (now.hour()== 3 && now.minute <=30)||   //3am before 30 minute
-            (now.hour()==6 && now.minute <=30)      //6am before 30 minute
+        if( (now.hour()== 18 && now.minute <=30) || //6pm before 30 minute mark
+            (now.hour()== 21 && now.minute <=30) || //9pm before 30 minute mark
+            (now.hour()== 0 && now.minute <=30) ||  //12am before 30 minute mark
+            (now.hour()== 3 && now.minute <=30)||   //3am before 30 minute mark
+            (now.hour()==6 && now.minute <=30)      //6am before 30 minute mark
            ){
             //Activate relays to allow sensors to measure moisture and call ADC
             digitalWrite(Sensor_A, HIGH);
